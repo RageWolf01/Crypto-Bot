@@ -1,0 +1,151 @@
+# =============================================================================
+# Crypto Advisor - user configuration
+# =============================================================================
+# This is the main file you edit. Everything here is safe to change.
+# TOML syntax: `key = value`, `#` starts a comment, arrays use [a, b, c].
+# Run `python run.py --check-config` after editing to validate it.
+# =============================================================================
+
+[general]
+# How many of the largest coins (by market cap) to consider as the universe.
+# Larger = slower, and pulls in progressively less liquid assets.
+universe_size = 150
+
+# Binance quote asset. USDT is the deepest. Changing this changes the universe.
+quote_asset = "USDT"
+
+# Where generated reports and the SQLite cache live.
+report_dir = "reports"
+data_dir = "data"
+
+# Label used in report filenames and the digest header. Set to your own tz name
+# from the IANA database, e.g. "Europe/London", "Asia/Kuala_Lumpur", "America/New_York".
+timezone = "UTC"
+
+
+# -----------------------------------------------------------------------------
+# QUANTITATIVE SCORING
+# -----------------------------------------------------------------------------
+[quant.weights]
+# Relative importance of each factor group. These do NOT need to sum to 1.0 --
+# the scorer normalises them. Keep the number of knobs small: a score with 40
+# tunable weights is curve-fit to history and will not generalise.
+#
+# liquidity  : can you actually get in and out without moving the price?
+# momentum   : risk-adjusted trend, NOT raw returns
+# tokenomics : supply inflation, float, unlock cliffs
+# traction   : is the thing actually being used, and does it earn fees?
+# valuation  : are you paying a sane price for that traction?
+liquidity = 0.25
+momentum = 0.20
+tokenomics = 0.20
+traction = 0.20
+valuation = 0.15
+
+
+[quant.disqualifiers]
+# Hard gates. A coin that trips ANY of these is excluded from the ranked
+# shortlist regardless of how good its score is, and the reason is reported.
+# This is deliberate: it is far more reliable to identify what will hurt you
+# than to identify what will make money.
+
+# Minimum 24h quote volume on Binance, in USD.
+min_daily_volume_usd = 5_000_000
+
+# Minimum market cap in USD (requires CoinGecko enrichment; skipped if unavailable).
+min_market_cap_usd = 100_000_000
+
+# Minimum age in days since Binance spot listing. Filters brand-new listings.
+min_listing_age_days = 365
+
+# Order-book depth within 2% of mid price, summed across both sides, in USD.
+min_book_depth_usd = 250_000
+
+# Maximum bid/ask spread in basis points (1 bp = 0.01%).
+max_spread_bps = 25
+
+# Exclude stablecoins and pegged assets from the *investment* ranking entirely.
+# They are still reported separately in the Sharia section.
+exclude_stablecoins = true
+
+
+[quant.depth]
+# How far from mid price to measure book depth, as a fraction.
+band_pct = 0.02
+# Order-book levels to request from Binance (max 5000).
+levels = 500
+
+
+[quant.momentum]
+# Lookback windows in days for risk-adjusted return.
+windows = [30, 90, 180]
+
+# Annual risk-free rate used in the Sortino ratio. Set to 0.0 if you prefer a
+# pure return/volatility measure.
+risk_free_annual = 0.04
+
+# Cap on how much any single window can contribute, to stop one parabolic
+# 30-day move from dominating the score.
+max_window_z = 2.5
+
+
+[quant.regime]
+# The regime filter does not change the RANKING. It changes the recommended
+# total exposure. This is the honest place to put a market-timing view.
+#
+# BTC above its 200-day moving average = risk-on; below = risk-off.
+use_btc_200dma = true
+
+# Fear & Greed extremes. Above the greed threshold or below the fear threshold,
+# scale exposure down (buying euphoria / panic-selling are both punished).
+fear_greed_greed_threshold = 75
+fear_greed_fear_threshold = 25
+
+# Target total portfolio exposure in the neutral regime, and in each extreme.
+exposure_neutral = 0.60
+exposure_risk_off = 0.25
+exposure_euphoric = 0.30
+exposure_fearful = 0.50
+
+
+# -----------------------------------------------------------------------------
+# DATA FETCHING
+# -----------------------------------------------------------------------------
+[fetch]
+http_timeout_s = 30
+max_retries = 4
+
+# Minimum spacing between calls to the same provider, in milliseconds.
+# CoinGecko's free tier is aggressively throttled -- do not lower this.
+binance_min_interval_ms = 250
+coingecko_min_interval_ms = 6500
+defillama_min_interval_ms = 700
+
+# How long a cached HTTP response stays fresh, in seconds.
+ttl_market_s = 1800          # 30 min
+ttl_protocol_s = 21600       # 6 h
+ttl_coingecko_s = 43200      # 12 h
+ttl_categories_s = 604800    # 7 d
+ttl_sentiment_s = 3600       # 1 h
+
+# When a provider is unreachable or throttled, fall back to a stale cache entry
+# rather than failing. Strongly recommended; CoinGecko will throttle you.
+allow_stale_fallback = true
+max_stale_age_s = 259200     # 3 days
+
+
+# -----------------------------------------------------------------------------
+# REPORTING
+# -----------------------------------------------------------------------------
+[report]
+# How many ranked assets to include in the digest.
+top_n = 12
+
+# Also list the assets that were disqualified, with reasons. Useful for
+# understanding why something you expected is missing.
+show_disqualified = true
+max_disqualified_shown = 15
+
+# ISO date or a relative expression. Only snapshots on/after this date are used
+# for any historical comparison.
+snapshots_since = "2026-01-01"

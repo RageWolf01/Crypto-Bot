@@ -1,0 +1,27 @@
+# Local cache and database (regenerated automatically; the HTTP cache is large)
+data/
+*.sqlite3
+
+# Throwaway API probe scripts from the initial research pass
+_probe/
+_micprobe/
+_tmp/
+
+# Unrelated session scratch (playwright + node_modules)
+.research/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
